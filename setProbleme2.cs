@@ -1,3 +1,4 @@
+
 //winform project
 using System;
 using System.Collections.Generic;
@@ -14,47 +15,54 @@ using System.Windows.Forms;
 
 namespace setProbleme2
 {
-    public partial class Form1: Form
+    public partial class Form1 : Form
     {
         public Form1()
         {
             InitializeComponent();
         }
-       public int padding = 20;
-      public  int epsilon = 10;
-        public Random rnd = new Random();   
+        public int padding = 20;
+        public int epsilon = 10;
+        public Random rnd = new Random();
         private void Form1_Load(object sender, EventArgs e)
         {
 
         }
-        private float distanta(PointF a, PointF b) {
-            return (float)Math.Sqrt(Math.Pow(a.X-b.X,2)+Math.Pow(a.Y-b.Y,2));
+        private float distanta(PointF a, PointF b)
+        {
+            return (float)Math.Sqrt(Math.Pow(a.X - b.X, 2) + Math.Pow(a.Y - b.Y, 2));
         }
-        private float ariaTriunghi(PointF a,PointF b,PointF c) {
+        private float ariaTriunghi(PointF a, PointF b, PointF c)
+        {
             float x1 = a.X, x2 = b.X, x3 = c.X;
             float y1 = a.Y, y2 = b.Y, y3 = c.Y;
-            float d = x1 * (y2-y3) + x2 * (y3-y1) + x3 * (y1-y2);
+            float d = x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2);
             return 0.5f * Math.Abs(d);
         }
 
-        private bool coliniare(PointF a,PointF b,PointF c) {
-            float x1=a.X, x2=b.X, x3=c.X;
+        private bool coliniare(PointF a, PointF b, PointF c)
+        {
+            float x1 = a.X, x2 = b.X, x3 = c.X;
             float y1 = a.Y, y2 = b.Y, y3 = c.Y;
             float determinant = x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2);
-            if (determinant==0) { return true; }
+            if (determinant == 0) { return true; }
             return false;
         }
-        private float produsVectorial(PointF a,PointF b,PointF c) {
-            return (b.X-a.X) * (c.Y-a.Y) - (c.X-a.X) * (b.Y-a.Y);
+        private float produsVectorial(PointF a, PointF b, PointF c)
+        {
+            return (b.X - a.X) * (c.Y - a.Y) - (c.X - a.X) * (b.Y - a.Y);
         }
-        private List<PointF> invelitoareConvexa(PointF[] puncte) {
+        private List<PointF> invelitoareConvexa(PointF[] puncte)
+        {
             Stack<PointF> hull = new Stack<PointF>();
-            PointF pivot = puncte.OrderBy(p => p.Y).ThenBy(p=>p.X).First();
-            puncte = puncte.OrderBy(p=>Math.Atan2(p.Y-pivot.Y,p.X-pivot.X)).ThenBy(p=>distanta(p,pivot)).ToArray();
+            PointF pivot = puncte.OrderBy(p => p.Y).ThenBy(p => p.X).First();
+            puncte = puncte.OrderBy(p => Math.Atan2(p.Y - pivot.Y, p.X - pivot.X)).ThenBy(p => distanta(p, pivot)).ToArray();
             hull.Push(puncte[0]);
             hull.Push(puncte[1]);
-            for (int i=2;i<puncte.Length;i++) {
-                while (hull.Count>=2 && produsVectorial(pivot,hull.ElementAt(hull.Count-2),puncte[i])<=0) {
+            for (int i = 2; i < puncte.Length; i++)
+            {
+                while (hull.Count >= 2 && produsVectorial(pivot, hull.ElementAt(hull.Count - 2), puncte[i]) <= 0)
+                {
                     hull.Pop();
                 }
                 hull.Push(puncte[i]);
@@ -63,7 +71,94 @@ namespace setProbleme2
 
         }
 
-        
+
+
+        //start cod necesar pentru algoritmul lui welzl
+
+        #region algoritmul lui Welzl
+
+        private class Cerc
+        {
+            public float Raza { set; get; }
+            public PointF Centru { set; get; }
+
+            public Cerc(PointF centru, float raza)
+            {
+                Raza = raza;
+                Centru = new PointF(centru.X, centru.Y);
+
+            }
+
+        }
+
+        private Cerc CercMinim(List<PointF> puncte)
+        {
+            int n = puncte.Count;
+            if (n == 1) { return new Cerc(new PointF(puncte[0].X, puncte[0].Y), 0); }
+            if (n == 2)
+            {
+                PointF Centru = new PointF((puncte[0].X + puncte[1].X) / 2, (puncte[0].Y + puncte[1].Y) / 2);
+                float Raza = distanta(puncte[0], puncte[1]) / 2;
+                return new Cerc(Centru, Raza);
+            }
+            if (n == 3)
+            {
+
+
+                //start calcul determinare centru curent
+                if (coliniare(puncte[0], puncte[1], puncte[2])) { return new Cerc(new PointF(0, 0), 0); }
+                float x1 = puncte[0].X, x2 = puncte[1].X, x3 = puncte[2].X;
+                float y1 = puncte[0].Y, y2 = puncte[1].Y, y3 = puncte[2].Y;
+                float t1 = x1 * x1 - x2 * x2 + y1 * y1 - y2 * y2;
+                float t2 = x1 * x1 - x3 * x3 + y1 * y1 - y3 * y3;
+                float p1 = 2 * (x2 - x1);
+                float p2 = 2 * (x3 - x1);
+                float s1 = 2 * (y2 - y1);
+                float s2 = 2 * (y3 - y1);
+
+                float yCentru = (t1 * p2 - t2 * p1) / (s2 * p1 - s1 * p2);
+                float xCentru = (-t2 - yCentru * s2) / p2;
+                PointF centru = new PointF(xCentru, yCentru);
+                //sfarsit calcul determinare centru curent
+                float raza = distanta(centru, puncte[0]);
+                return new Cerc(centru, raza);
+
+            }
+            return new Cerc(new PointF(0, 0), 0);
+        }
+
+        private Cerc Welzl(List<PointF> puncte, List<PointF> puncteExcluse)
+        {
+            if (puncte.Count == 0 || puncteExcluse.Count == 3)
+            {
+                return CercMinim(puncteExcluse);
+            }
+
+            int i = rnd.Next(0, puncte.Count);
+            PointF punctExclus = puncte[i];
+            puncte.RemoveAt(i);
+
+            Cerc cerc = Welzl(puncte, puncteExcluse);
+
+            if (distanta(cerc.Centru, punctExclus) > cerc.Raza)
+            {
+                puncteExcluse.Add(punctExclus);
+                cerc = Welzl(puncte, puncteExcluse);
+                puncteExcluse.RemoveAt(puncteExcluse.Count - 1);
+            }
+
+            puncte.Add(punctExclus);
+            return cerc;
+        }
+
+
+
+
+        #endregion
+
+        //sfarsit cod necesar pentru algoritmul lui welzl
+
+
 
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
@@ -366,12 +461,29 @@ namespace setProbleme2
 
             //Solutie chiar mai eficienta(Algoritmul lui welzl)
             //rezolvare:
-
-            
-
+            List<PointF> puncte = new List<PointF>();
+            List<PointF> puncteExcluse = new List<PointF>();
+            int n = rnd.Next(10,100);
+            for (int i=0;i<n;i++) {
+                float x = rnd.Next(padding,ClientSize.Width-padding);
+                float y = rnd.Next(padding,ClientSize.Height-padding);
+                puncte.Add(new PointF(x,y));    
             }
+            List<PointF> copiePuncte = new List<PointF>(puncte);
+            Cerc cercMinim = Welzl(puncte,puncteExcluse);
+            PointF centru = cercMinim.Centru;
+            float raza = cercMinim.Raza;
+            g.DrawEllipse(new Pen(Color.Green, 4), centru.X-raza,centru.Y-raza,2*raza,2*raza);
+            foreach (PointF punct in copiePuncte) {
+                g.FillEllipse(Brushes.Red, punct.X-epsilon/2,punct.Y-epsilon/2,epsilon,epsilon);
+            }
+            g.FillEllipse(Brushes.Blue,centru.X-epsilon/2,centru.Y-epsilon/2,epsilon,epsilon);
+
+
 
         }
-      }
-    
+
+    }
+}
+
 
