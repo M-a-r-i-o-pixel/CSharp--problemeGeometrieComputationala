@@ -1,0 +1,119 @@
+using System.ComponentModel.Design.Serialization;
+using System.Net.NetworkInformation;
+using System.Numerics;
+
+namespace algoritmulSlabDeDeterminareAInvelitoriiConvexe
+{
+    public class latura
+    {
+        public (int x, int y) capat1;
+        public (int x, int y) capat2;
+
+        public latura((int x,int y) c1,(int x,int y) c2) {
+            capat1.x = c1.x;
+            capat2.x = c2.x;
+            capat1.y = c1.y;
+            capat2.y = c2.y;
+        }
+
+    }
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+       
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            int padding = 20;
+            int epsilon = 10;
+            Random rnd = new Random();
+
+            int n = rnd.Next(0,100);
+            (int x, int y)[] puncte = new (int x, int y)[n];
+            for (int i = 0; i < n; i++) {
+                puncte[i] = (rnd.Next(padding,ClientSize.Width-padding),rnd.Next(padding,ClientSize.Height-padding));
+               // g.FillEllipse(Brushes.Red, puncte[i].x - epsilon, puncte[i].y-epsilon,epsilon,epsilon);
+            }
+            latura latura1 = new latura((puncte[0].x, puncte[0].y), (puncte[1].x, puncte[1].y));
+            List<latura> laturi = new List<latura>();//lista laturilor invelitorii convexe
+            for (int i=0;i<n;i++) {
+
+                for (int j =0; j < n; j++)
+                {
+                    (int x, int y) p = puncte[i%n];
+                    (int x, int y) q = puncte[j%n];
+                    bool valid = true;
+                    if (p == q) { continue; }
+                    foreach ((int x, int y) r in puncte)
+                    {
+                        if (r == p || r == q) { continue; }
+
+                        //daca r este la dreapta laturii pq atunci valid=false (IMPLEMENTEAZA)
+                        int x1 = p.x, x2 = q.x;
+                        int y1 = p.y, y2 = q.y;
+                        int x3 = r.x, y3 = r.y;
+                        int determinant = x1 * y2 + x2 * y3 + x3 * y1 - (y1 * x2 + y2 * x3 + y3 * x1);
+                        if (determinant < 0) { valid = false; }
+
+
+
+
+                    }
+                    if (valid)
+                    {
+                        latura laturaNoua = new latura(p, q);
+                        laturi.Add(laturaNoua);
+
+
+                    }
+                }
+            }
+            //Din lista de laturi construieste lista L de varfuri,in sens trigonometric
+
+            List<(int x, int y)> varfuri = new List<(int x, int y)>();
+            for (int i=0;i<laturi.Count;i++) {
+                latura laturaCurenta = laturi[i];
+                (int x, int y) capat1 = laturaCurenta.capat1;
+                (int x, int y) capat2 = laturaCurenta.capat2;
+                varfuri.Add(capat1);
+                varfuri.Add(capat2);
+            }
+
+            Pen pen = new Pen(Color.Green, 4);
+            for (int i=0;i<laturi.Count;i++) {
+                latura l1 = laturi[i];
+                (int x, int y) p1 = l1.capat1;
+
+                (int x, int y) p2 = l1.capat2;
+                
+
+                
+
+
+                g.DrawLine(pen,p1.x,p1.y,p2.x,p2.y);
+
+               
+
+               // g.DrawLine(pen,p1.x,p1.y,p4.x,p4.y);
+                
+
+            }
+            
+            for (int i=0;i<varfuri.Count;i++) {
+                g.FillEllipse(Brushes.Red, varfuri[i].x - epsilon/2, varfuri[i].y-epsilon/2,epsilon,epsilon);
+
+            }
+                        
+
+        }
+    }
+}
