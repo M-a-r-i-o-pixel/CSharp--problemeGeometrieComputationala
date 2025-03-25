@@ -1,0 +1,63 @@
+namespace algoritmulLuiJarvis
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+        private int orientare(PointF p1, PointF p2, PointF p3) {
+            float x1 = p1.X, x2 = p2.X, x3 = p3.X;
+            float y1 = p1.Y, y2 = p2.Y, y3 = p3.Y;
+
+            float determinant = (x2-x1) * (y3-y1) - (x3-x1) * (y2-y1);
+            if (determinant == 0) { return 0; }//punctele sunt coliniare
+            else if (determinant < 0) { return 1; }//orientare spre dreapta
+            else { return -1; }//orientare spre stanga
+        }
+        private List<PointF> algoritmulLuiJarvis(List<PointF> puncte) {
+            PointF p1 = puncte.OrderBy(p => p.Y).ThenBy(p=>p.X).First();
+            List<PointF> varfuriInvelitoare = new List<PointF>();
+
+            PointF p2 = p1;
+            while (true) {
+                varfuriInvelitoare.Add(p2);
+                PointF p3 = puncte[0];
+                foreach (PointF punct in puncte) {
+                    if (orientare(p2,p3,punct) < 0) {
+                        p3 = punct;
+                    }
+                }
+                p2 = p3;
+                if (p2 == p1) { break; }
+            }
+            return varfuriInvelitoare;
+        }
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            int padding = 20;
+            Random rnd = new Random();
+            int epsilon = 10;
+
+            int n = rnd.Next(10,20);
+            List<PointF> puncte = new List<PointF>();
+            for (int i = 0; i < n; i++) {
+                puncte.Add(new PointF(rnd.Next(padding,ClientSize.Width-padding),rnd.Next(padding,ClientSize.Height-padding)));
+                g.FillEllipse(Brushes.Red, puncte[i].X - epsilon/2, puncte[i].Y-epsilon/2,epsilon,epsilon);
+            }
+            List<PointF> varfuriInvelitoare = algoritmulLuiJarvis(puncte);
+            Pen bluePen = new Pen(Color.Blue,4);
+            for (int i = 0; i < varfuriInvelitoare.Count; i++) {
+                int i1 = i % varfuriInvelitoare.Count;
+                int i2 = (i + 1) % varfuriInvelitoare.Count;
+                g.DrawLine(bluePen, varfuriInvelitoare[i1], varfuriInvelitoare[i2]);
+            }
+        }
+    }
+}
