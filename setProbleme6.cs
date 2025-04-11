@@ -118,98 +118,103 @@ namespace seminar6
 
 
 
+/*problema2
+using System.Windows.Forms.Design;
 
-//problema 2: reprezentarea grafica a unui poligon simplu cu n varfuri(prin desenare)
-
-/*
-using System.Security.Cryptography.X509Certificates;
-using System.Threading;
-
-namespace seminar6
+namespace WinFormsApp1
 {
 
 
     public partial class Form1 : Form
     {
+        public static int Determinant(Point p1, Point p2, Point p3)
+        {
+            return (p3.Y - p1.Y) * (p2.X - p1.X) - (p2.Y - p1.Y) * (p3.X - p1.X);
+        }
+        public static bool Intersect(Point start1, Point end1, Point start2, Point end2)
+        {
+            int det11 = Determinant(end1, start1, start2);
+            int det12 = Determinant(end1, start1, end2);
+            int det21 = Determinant(end2, start2, start1);
+            int det22 = Determinant(end2, start2, end1);
+            if (det11 * det12 < 0 && det21 * det22 < 0) { return true; }
+            return false;
+        }
+        public static bool Intersect(Segment seg1, Segment seg2)
+        {
+            return Intersect(seg1.start, seg1.end, seg2.start, seg2.end);
+        }
         public Form1()
         {
             InitializeComponent();
         }
+        int epsilon = 6;
+        List<Segment> sides = new List<Segment>();
+        List<Point> points = new List<Point>();
+
         private void Form1_Load(object sender, EventArgs e)
         {
 
         }
-
-        public static float Determinant(PointF p1,PointF p2,PointF p3) {
-            return (p3.Y-p1.Y) * (p2.X-p1.X) - (p2.Y-p1.Y) * (p3.X-p1.X);
-        }
-        public static double Distance(PointF p1,PointF p2) {
-            return Math.Sqrt(Math.Pow(p1.X-p2.X,2)+Math.Pow(p1.Y-p2.Y,2));
-        }
-        public static List<PointF> JarvisAlgorithm(List<PointF> points) {
-            List<PointF> toR = new List<PointF>();
-            PointF start = points.OrderBy(p => p.Y).ThenBy(p => p.X).First();
-            PointF current = start;
-            while (true) {
-                toR.Add(current);
-                PointF next = points[0];
-                foreach (PointF point in points) {
-                    if (point == current) { continue; }
-                    float det = Determinant(current,next,point);
-                    if(det>0 || (det==0 && Distance(current,point) > Distance(current,next))) {
-                        next = point;
-                    }
-                }
-                current = next;
-
-
-                if (current == start) { break; }
-            }
-            return toR;
-        }
-
-
-        public Random rnd = new Random();
-        public float epsilon = 8;
-        public int padding = 20;
-        public List<PointF> puncte = new List<PointF>();
-        public List<PointF> varfuri = new List<PointF>();
-        private void Form1_Paint(object sender, PaintEventArgs e)
-        {
-            if (puncte.Count == 0) { return; }
-            Graphics g = e.Graphics;
-            
-            
-            List<PointF> varfuri2 = varfuri;
-            varfuri2.Add(puncte[puncte.Count-1]);
-            varfuri = JarvisAlgorithm(varfuri2);
-            for (int i = 0; i < varfuri.Count; i++) {
-                PointF start = varfuri[i];
-                PointF end = varfuri[(i+1)%varfuri.Count];
-                g.DrawLine(Pens.Blue,start,end);
-            }
-            foreach (PointF punct in puncte) {
-                g.FillEllipse(Brushes.Red, punct.X-epsilon/2,punct.Y-epsilon/2,epsilon,epsilon);
-            }
-            foreach (PointF varf in varfuri) {
-                g.FillEllipse(Brushes.Green,varf.X-epsilon/2,varf.Y-epsilon/2,epsilon,epsilon);
-                g.DrawString($"( {varf.X} , {varf.Y} )",new Font(FontFamily.GenericSansSerif,10),new SolidBrush(Color.Black),varf);
-            }
-        }
+        
 
         private void Form1_Click(object sender, EventArgs e)
         {
-            
-            PointF aux = this.PointToClient(new Point(Form1.MousePosition.X,Form1.MousePosition.Y));
-            puncte.Add(aux);
+            Point Position = PointToClient(new Point(Form1.MousePosition.X, Form1.MousePosition.Y));
+            points.Add(Position);
+            points.OrderBy(p => p.X).ThenBy(p => p.Y).ToList();
+            sides.Clear();
+            for (int i = 0; i < points.Count; i++) {
+                int i1 = i;
+                int i2 = (i + 1)%points.Count;
+                Point p1 = points[i1];
+                Point p2 = points[i2];
+                Segment newSide = new Segment(p1,p2);
+                bool ok = true;
+                foreach (Segment prevSide in sides) {
+                    if (Intersect(prevSide, newSide)) { ok = false;break; }
+                }
+                if (!ok) { continue; }
+                sides.Add(newSide);
+            }
+
+
+
+
             Invalidate();
-           
+
+
+        }
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+
+            foreach (Segment side in sides)
+            {
+                g.DrawLine(Pens.Green, side.start, side.end);
+            }
+
+
+            foreach (Point p in points)
+            {
+                g.FillEllipse(Brushes.Red, p.X - epsilon / 2, p.Y - epsilon / 2, epsilon, epsilon);
+            }
+
+        }
+
+    }
+    public class Segment
+    {
+        public Point start, end;
+        public Segment(Point start, Point end)
+        {
+            this.start = start;
+            this.end = end;
         }
     }
 }
+
 */
-
-
 
 
 
