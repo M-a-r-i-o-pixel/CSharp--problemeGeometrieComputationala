@@ -9,12 +9,12 @@ namespace Seminar8
 {
     public static class MyGeometry
     {
-        static int CrossProduct(Point p1,Point p2,Point p3) {
+        public static int CrossProduct(Point p1,Point p2,Point p3) {
             int x1 = p1.X, x2 = p2.X, x3 = p3.X, y1 = p1.Y, y2 = p2.Y, y3 = p3.Y;
             return (y3 - y1) * (x2 - x1) - (y2 - y1) * (x3 - x1);
         }
 
-        static int CrossProduct(int i1, int i2, int i3, List<Point> points) {
+       public static int CrossProduct(int i1, int i2, int i3, List<Point> points) {
             Point p1 = points[i1];
             Point p2 = points[i2];
             Point p3 = points[i3];
@@ -24,7 +24,7 @@ namespace Seminar8
 
 
 
-        static bool Intersect(Point start1, Point end1, Point start2, Point end2) {
+       public static bool Intersect(Point start1, Point end1, Point start2, Point end2) {
             int det11 = CrossProduct(end1, start1, start2);
             int det12 = CrossProduct(end1, start1, end2);
             int det21 = CrossProduct(end2, start2, start1);
@@ -33,7 +33,7 @@ namespace Seminar8
             bool result = det11 * det12 <= 0 && det21 * det22 <= 0;
             return result;
         }
-        static bool Intersect(int s1, int e1, int s2, int e2, List<Point> points) {
+       public static bool Intersect(int s1, int e1, int s2, int e2, List<Point> points) {
             Point start1 = points[s1];
             Point start2 = points[s2];
             Point end1 = points[e1];
@@ -44,23 +44,23 @@ namespace Seminar8
 
 
 
-        static bool RightTurn(Point p1, Point p2, Point p3) {
+       public static bool RightTurn(Point p1, Point p2, Point p3) {
             bool result = CrossProduct(p1, p2, p3) > 0;
             return result;
         }
-        static bool LeftTurn(Point p1, Point p2, Point p3) {
+       public static bool LeftTurn(Point p1, Point p2, Point p3) {
             bool result = CrossProduct(p1, p2, p3) < 0;
             return result;
         }
 
-        static bool RightTurn(int i1, int i2, int i3, List<Point> points) {
+      public  static bool RightTurn(int i1, int i2, int i3, List<Point> points) {
             Point p1 = points[i1];
             Point p2 = points[i2];
             Point p3 = points[i3];
 
             return RightTurn(p1, p2, p3);
         }
-        static bool LeftTurn(int i1, int i2, int i3, List<Point> points) {
+      public  static bool LeftTurn(int i1, int i2, int i3, List<Point> points) {
             Point p1 = points[i1];
             Point p2 = points[i2];
             Point p3 = points[i3];
@@ -68,13 +68,13 @@ namespace Seminar8
             return LeftTurn(p1, p2, p3);
         }
 
-        static bool ConvexPeak(int index, List<Point> points) {
+       public static bool ConvexPeak(int index, List<Point> points) {
             int n = points.Count;
             int prev_index = (index > 0) ? index - 1 : n - 1;
             int next_index = (index < n - 1) ? index + 1 : 0;
             return RightTurn(prev_index, index, next_index,points);
         }
-        static bool ReflexPeak(int index, List<Point> points) {
+       public static bool ReflexPeak(int index, List<Point> points) {
             int n = points.Count;
             int prev_index = (index > 0) ? index - 1 : n - 1;
             int next_index = (index < n - 1) ? index + 1 : 0;
@@ -84,7 +84,7 @@ namespace Seminar8
 
 
 
-        static bool InsidePolygon(int i, int j,List<Point> points) {
+      public  static bool InsidePolygon(int i, int j,List<Point> points) {
             int n = points.Count;
             int prev_i = (i - 1 >= 0) ? i - 1 : n - 1;
             int next_i = (i + 1 <= n - 1) ? i + 1 : 0;
