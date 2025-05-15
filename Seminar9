@@ -1,0 +1,131 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Seminar9.cs
+{
+    public partial class Form1 : Form
+    {
+        List<Point> points;
+        bool drawPolygon;
+        List<(Point,Point)> diagonals;
+        bool drawDiagonals;
+        const int radius = 3;
+        public Form1()
+        {
+            InitializeComponent();
+            points = new List<Point>();
+            drawPolygon = false;
+            diagonals = new List<(Point, Point)>();
+            drawDiagonals = false;
+
+        }
+
+        private void Form1_Click(object sender, EventArgs e)
+        {
+            drawPolygon = false;
+            Point newPoint = PointToClient(Form1.MousePosition);
+            diagonals = new List<(Point, Point)>();
+            drawDiagonals = false;
+            points.Add(newPoint);
+            
+            Invalidate();
+        }
+
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            #region draw points
+            {
+                int n = points.Count;
+                for (int i = 0; i < n; i++) {
+                    Point p = points[i];
+                    int x = p.X;
+                    int y = p.Y;
+                    g.DrawEllipse(Pens.Navy,x-radius,y-radius,2*radius,2*radius);
+                    string text = (i + 1).ToString();
+                    g.DrawString(text,new Font(FontFamily.GenericMonospace,10),Brushes.Navy,p.X-radius,p.Y+radius);
+                }
+            }
+            #endregion
+            #region draw polygon
+            if(drawPolygon)
+            {
+                int n = points.Count;
+                for (int i = 0; i < n; i++) {
+                    int i1 = i;
+                    int i2 = (i + 1) % n;
+                    Point p1 = points[i1];
+                    Point p2 = points[i2];
+                    g.DrawLine(Pens.Navy, p1, p2);
+                }
+            }
+            #endregion
+            #region draw diagonals
+            if (drawDiagonals) {
+                foreach ((Point, Point) diagonal in diagonals) {
+                    Point p1 = diagonal.Item1;
+                    Point p2 = diagonal.Item2;
+                    g.DrawLine(Pens.Red, p1, p2);
+                }
+            }
+            #endregion
+        }
+
+        private void DRAW_POLYGON_Click(object sender, EventArgs e)
+        {
+            drawPolygon = true;
+            Invalidate();
+        }
+
+        private void DRAW_DIAGONALS_Click(object sender, EventArgs e)
+        {
+            #region algoritm partitionare poligon in poligoane monotone
+            List<Point> points2 = new List<Point>(points);
+            int n = points2.Count;
+            for (int i = 0; i <n; i++) {
+                int current_i = i;
+                
+                int prev_i = AUXf.decrement(current_i, points2);
+                int next_i = AUXf.increment(current_i, points2);
+                Point currentPoint = points2[current_i];
+                if (!AUXf.ReflexVertex(currentPoint,points)) { continue; }
+                
+                Point nextPoint = points2[next_i];
+                Point prevPoint = points2[prev_i];
+                bool cauta_sub = false, cauta_peste = false;
+                if (prevPoint.Y<currentPoint.Y && nextPoint.Y<currentPoint.Y) {
+                    cauta_peste = true;
+                    //pentru ca punctele prev si next sunt sub cautam peste
+                }
+                if (prevPoint.Y > currentPoint.Y && nextPoint.Y > currentPoint.Y) {
+                    cauta_sub = true;
+                }
+                if (!cauta_sub && !cauta_peste)
+                    continue;
+                for (int j = 0; j < n; j++) {
+                    prev_i = AUXf.decrement(prev_i, points2);
+                    next_i = AUXf.increment(next_i, points2);
+                    prevPoint = points2[prev_i];
+                    nextPoint = points2[next_i];
+                    
+                    if (cauta_peste && prevPoint.Y > currentPoint.Y) { diagonals.Add((currentPoint,prevPoint));break; }
+                    if (cauta_peste && nextPoint.Y > currentPoint.Y) { diagonals.Add((currentPoint,nextPoint));break; }
+                    if (cauta_sub && prevPoint.Y < currentPoint.Y) { diagonals.Add((currentPoint,prevPoint));break; }
+                    if (cauta_sub && nextPoint.Y < currentPoint.Y) { diagonals.Add((currentPoint,nextPoint));break; }
+                }
+                
+            }
+            #endregion
+
+            drawDiagonals = true;
+            Invalidate();
+        }
+    }
+}
