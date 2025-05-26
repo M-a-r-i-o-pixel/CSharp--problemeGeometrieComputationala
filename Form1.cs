@@ -1,0 +1,314 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Seminar10
+{
+    public partial class Form1 : Form
+    {
+        List<PointF> puncte = new List<PointF>();
+        List<Tuple<int, int>> diagonale = new List<Tuple<int, int>>();
+        List<Tuple<int, int, int>> triunghiuri = new List<Tuple<int, int, int>>();
+        List<Tuple<int, int>> diagonaleVerzi = new List<Tuple<int, int>>();
+        bool poligonInchis = false;
+
+        public Form1()
+        {
+            InitializeComponent();
+            this.DoubleBuffered = true;
+            this.MouseClick += Form1_MouseClick;
+            this.Paint += Form1_Paint;
+
+            Button inchideBtn = new Button();
+            inchideBtn.Text = "Inchide poligonul";
+            inchideBtn.Location = new Point(10, 10);
+            inchideBtn.Click += buttonInchide_Click;
+            this.Controls.Add(inchideBtn);
+
+            Button partBtn = new Button();
+            partBtn.Text = "Partitionare";
+            partBtn.Location = new Point(150, 10);
+            partBtn.Click += buttonPartizioneaza_Click;
+            this.Controls.Add(partBtn);
+
+            Button trianguleazaBtn = new Button();
+            trianguleazaBtn.Text = "Triangulare";
+            trianguleazaBtn.Location = new Point(280, 10);
+            trianguleazaBtn.Click += buttonTrianguleaza_Click;
+            this.Controls.Add(trianguleazaBtn);
+        }
+        //creeaza puncte la click   
+        private void Form1_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (!poligonInchis)
+            {
+                puncte.Add(new PointF(e.X, e.Y));
+                Invalidate();
+            }
+        }
+        //inchide poligonul daca are cel putin 3 puncte
+        private void buttonInchide_Click(object sender, EventArgs e)
+        {
+            if (puncte.Count >= 3)
+            {
+                poligonInchis = true;
+                Invalidate();
+            }
+        }
+        //Parti?ioneaz? poligonul prin ad?ugarea de diagonale din vârfurile reflexe c?tre cel mai apropiat vârf valid
+        private void buttonPartizioneaza_Click(object sender, EventArgs e)
+        {
+            if (!poligonInchis || puncte.Count < 4) return;
+
+            diagonale.Clear();
+            int n = puncte.Count;
+
+            for (int i = 0; i < n; i++)
+            {
+                if (esteVarfReflex(i))
+                {
+                    int tinta = -1;
+                    float minDist = float.MaxValue;
+
+                    for (int j = 0; j < n; j++)
+                    {
+                        if (j == i || j == (i - 1 + n) % n || j == (i + 1) % n) continue;
+
+                        if (!SeIntersecteazaCuMuchiiSiDiagonale(i, j))
+                        {
+                            float d = Dist(puncte[i], puncte[j]);
+                            if (d < minDist)
+                            {
+                                tinta = j;
+                                minDist = d;
+                            }
+                        }
+                    }
+
+                    if (tinta != -1)
+                    {
+                        diagonale.Add(new Tuple<int, int>(i, tinta));
+                    }
+                }
+            }
+
+            Invalidate();
+        }
+        //Trianguleaz? poligonul prin împ?r?irea lui în triunghiuri, folosind diagonalele existente.
+        private void buttonTrianguleaza_Click(object sender, EventArgs e)
+        {
+            triunghiuri.Clear();
+            diagonaleVerzi.Clear();
+            List<int> indices = new List<int>();
+            for (int i = 0; i < puncte.Count; i++) indices.Add(i);
+
+            List<Tuple<int, int>> toateDiagonalele = new List<Tuple<int, int>>(diagonale);
+
+            foreach (var d in toateDiagonalele)
+            {
+                int a = d.Item1;
+                int b = d.Item2;
+
+                List<int> subPoligon = new List<int>();
+                int current = a;
+                subPoligon.Add(current);
+                while (current != b)
+                {
+                    current = (current + 1) % puncte.Count;
+                    subPoligon.Add(current);
+                }
+
+                TrianguleazaSubpoligon(subPoligon);//trianguleaza acest poligon
+            }
+
+            Invalidate();
+        }
+        //trianguleaza subpoligon folosind earClipping
+        private void TrianguleazaSubpoligon(List<int> subPoligon)
+        {
+            if (subPoligon.Count < 3) return;
+            List<int> indices = new List<int>(subPoligon);
+
+            while (indices.Count > 3)
+            {
+                bool earFound = false;
+                for (int i = 0; i < indices.Count; i++)
+                {
+                    int prev = indices[(i - 1 + indices.Count) % indices.Count];
+                    int curr = indices[i];
+                    int next = indices[(i + 1) % indices.Count];
+
+                    if (esteVarfConvex(prev, curr, next))
+                    {
+                        bool hasPointInside = false;
+                        for (int j = 0; j < indices.Count; j++)
+                        {
+                            int p = indices[j];
+                            if (p == prev || p == curr || p == next) continue;
+                            if (PointInTriangle(puncte[p], puncte[prev], puncte[curr], puncte[next]))
+                            {
+                                hasPointInside = true;
+                                break;
+                            }
+                        }
+
+                        var diag1 = Tuple.Create(Math.Min(prev, next), Math.Max(prev, next));
+                        bool intersectsExisting = false;
+                        foreach (var d in diagonaleVerzi)
+                        {
+                            if (SegmenteSeIntersecteaza(puncte[prev], puncte[next], puncte[d.Item1], puncte[d.Item2]))
+                            {
+                                intersectsExisting = true;
+                                break;
+                            }
+                        }
+
+                        if (!hasPointInside && !intersectsExisting)
+                        {
+                            triunghiuri.Add(Tuple.Create(prev, curr, next));
+                            diagonaleVerzi.Add(diag1);
+                            indices.RemoveAt(i);
+                            earFound = true;
+                            break;
+                        }
+                    }
+                }
+                if (!earFound) break;
+            }
+
+            if (indices.Count == 3)
+            {
+                int a = indices[0], b = indices[1], c = indices[2];
+                var segs = new List<Tuple<int, int>> {
+                    Tuple.Create(Math.Min(a, b), Math.Max(a, b)),
+                    Tuple.Create(Math.Min(b, c), Math.Max(b, c)),
+                    Tuple.Create(Math.Min(c, a), Math.Max(c, a))
+                };
+                bool intersects = false;
+                foreach (var d in diagonaleVerzi)
+                {
+                    foreach (var s in segs)
+                    {
+                        if (SegmenteSeIntersecteaza(puncte[s.Item1], puncte[s.Item2], puncte[d.Item1], puncte[d.Item2]))
+                        {
+                            intersects = true;
+                            break;
+                        }
+                    }
+                    if (intersects) break;
+                }
+                if (!intersects)
+                {
+                    triunghiuri.Add(Tuple.Create(a, b, c));
+                    diagonaleVerzi.Add(segs[0]);
+                    diagonaleVerzi.Add(segs[1]);
+                    diagonaleVerzi.Add(segs[2]);
+                }
+            }
+        }
+        //Verific? dac? un segment(i, j) intersecteaz? vreuna din muchiile poligonului sau diagonalele existente
+        private bool SeIntersecteazaCuMuchiiSiDiagonale(int i, int j)
+        {
+            PointF a = puncte[i];
+            PointF b = puncte[j];
+            for (int k = 0; k < puncte.Count; k++)
+            {
+                int k1 = k;
+                int k2 = (k + 1) % puncte.Count;
+                if (k1 == i || k1 == j || k2 == i || k2 == j) continue;
+
+                if (SegmenteSeIntersecteaza(a, b, puncte[k1], puncte[k2]))
+                    return true;
+            }
+            foreach (var d in diagonale)
+            {
+                if ((d.Item1 == i && d.Item2 == j) || (d.Item1 == j && d.Item2 == i)) continue;
+                if (SegmenteSeIntersecteaza(a, b, puncte[d.Item1], puncte[d.Item2]))
+                    return true;
+            }
+            return false;
+        }
+        //functia de desenare
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            Pen pen = new Pen(Color.Blue, 2);
+            Brush brush = Brushes.DarkBlue;
+            Font font = new Font("Arial", 10);
+            Pen diagPen = new Pen(Color.Red, 1) { DashPattern = new float[] { 3, 3 } };
+            Pen triPen = new Pen(Color.Green, 1);
+
+            for (int i = 0; i < puncte.Count; i++)
+            {
+                g.FillEllipse(brush, puncte[i].X - 3, puncte[i].Y - 3, 6, 6);
+                g.DrawString(i.ToString(), font, brush, puncte[i].X + 5, puncte[i].Y + 5);
+                if (i > 0)
+                    g.DrawLine(pen, puncte[i - 1], puncte[i]);
+            }
+
+            if (poligonInchis && puncte.Count > 2)
+            {
+                g.DrawLine(pen, puncte[puncte.Count - 1], puncte[0]);
+            }
+
+            foreach (var d in diagonale)
+            {
+                g.DrawLine(diagPen, puncte[d.Item1], puncte[d.Item2]);
+            }
+
+            foreach (var t in triunghiuri)
+            {
+                g.DrawPolygon(triPen, new PointF[] { puncte[t.Item1], puncte[t.Item2], puncte[t.Item3] });
+            }
+        }
+        //distanta euclidiana dintre 2 puncte
+        private float Dist(PointF a, PointF b)
+        {
+            return (float)Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
+        }
+        //Verifica daca un varf > 180 (reflex)
+        private bool esteVarfReflex(int index)
+        {
+            int n = puncte.Count;
+            int prev = (index - 1 + n) % n;
+            int next = (index + 1) % n;
+            return Orientare(puncte[prev], puncte[index], puncte[next]) < 0;
+        }
+        //verifica daca un varf<180 (convex)
+        private bool esteVarfConvex(int i, int j, int k)
+        {
+            return Orientare(puncte[i], puncte[j], puncte[k]) > 0;
+        }
+
+        private float Orientare(PointF a, PointF b, PointF c)
+        {
+            return (b.X - a.X) * (c.Y - a.Y) - (b.Y - a.Y) * (c.X - a.X);//produsul vectorial 2D sa verificam sensul de rotatie
+        }
+
+        private bool PointInTriangle(PointF p, PointF a, PointF b, PointF c)
+        {
+            float area = Math.Abs(Orientare(a, b, c)) / 2;
+            float area1 = Math.Abs(Orientare(p, b, c)) / 2;
+            float area2 = Math.Abs(Orientare(a, p, c)) / 2;
+            float area3 = Math.Abs(Orientare(a, b, p)) / 2;
+            return Math.Abs(area - (area1 + area2 + area3)) < 1e-1;//daca suma egala cu <0,1 diferenta,true
+        }
+        //verifica daca 2 segmente de dreapta se intersecteaza
+        private bool SegmenteSeIntersecteaza(PointF a, PointF b, PointF c, PointF d)
+        {
+            float d1 = Orientare(c, d, a);
+            float d2 = Orientare(c, d, b);
+            float d3 = Orientare(a, b, c);
+            float d4 = Orientare(a, b, d);
+
+            return d1 * d2 < 0 && d3 * d4 < 0;
+        }
+
+    }
+}
