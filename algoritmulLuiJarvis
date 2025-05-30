@@ -2,62 +2,145 @@ namespace algoritmulLuiJarvis
 {
     public partial class Form1 : Form
     {
+        List<PointF> puncte;
+        const int radius = 3;
+        bool deseneazaPoligon;
+        List<PointF> varfuriInvelitoare;
+        bool deseneazaInvelitoare;
         public Form1()
         {
             InitializeComponent();
+            puncte = new List<PointF>();
+            deseneazaPoligon = false;
+            varfuriInvelitoare = new List<PointF>();
+            deseneazaInvelitoare = false;
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
 
         }
-        private int orientare(PointF p1, PointF p2, PointF p3) {
+        private List<PointF> algoritmulLuiJarvis(List<PointF> puncte)
+        {
+            if (puncte.Count < 3)
+                return new List<PointF>(puncte); // A convex hull isn't meaningful with fewer than 3 points.
+
+            // Start from the point with the lowest Y (and then lowest X if tie)
+            PointF start = puncte.OrderBy(p => p.Y).ThenBy(p => p.X).First();
+            List<PointF> varfuriInvelitoare = new List<PointF>();
+
+            PointF current = start;
+            while (true)
+            {
+                varfuriInvelitoare.Add(current);
+                PointF next = puncte[0];
+
+                foreach (PointF candidate in puncte)
+                {
+                    if (candidate == current)
+                        continue;
+
+                    int o = orientare(current, next, candidate);
+
+                    if (next == current || o < 0 || (o == 0 && Distance(current, candidate) > Distance(current, next)))
+                    {
+                        next = candidate;
+                    }
+                }
+
+                current = next;
+                if (current == start)
+                    break;
+            }
+
+            return varfuriInvelitoare;
+        }
+
+        private int orientare(PointF p1, PointF p2, PointF p3)
+        {
             float x1 = p1.X, x2 = p2.X, x3 = p3.X;
             float y1 = p1.Y, y2 = p2.Y, y3 = p3.Y;
 
-            float determinant = (x2-x1) * (y3-y1) - (x3-x1) * (y2-y1);
-            if (determinant == 0) { return 0; }//punctele sunt coliniare
-            else if (determinant < 0) { return 1; }//orientare spre dreapta
-            else { return -1; }//orientare spre stanga
+            float determinant = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
+            if (determinant == 0) return 0;    // colinear
+            return (determinant < 0) ? 1 : -1; // 1: right turn, -1: left turn
         }
-        private List<PointF> algoritmulLuiJarvis(List<PointF> puncte) {
-            PointF p1 = puncte.OrderBy(p => p.Y).ThenBy(p=>p.X).First();
-            List<PointF> varfuriInvelitoare = new List<PointF>();
 
-            PointF p2 = p1;
-            while (true) {
-                varfuriInvelitoare.Add(p2);
-                PointF p3 = puncte[0];
-                foreach (PointF punct in puncte) {
-                    if (orientare(p2,p3,punct) < 0) {
-                        p3 = punct;
-                    }
-                }
-                p2 = p3;
-                if (p2 == p1) { break; }
-            }
-            return varfuriInvelitoare;
+        private float Distance(PointF a, PointF b)
+        {
+            float dx = a.X - b.X;
+            float dy = a.Y - b.Y;
+            return dx * dx + dy * dy; // No need to take sqrt for comparison
         }
+
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            int padding = 20;
-            Random rnd = new Random();
-            int epsilon = 10;
+            #region plot puncte
+            {
+                int n = puncte.Count;
+                for (int i = 0; i < n; i++)
+                {
+                    int i1 = i;
+                    PointF p1 = puncte[i1];
+                    g.DrawEllipse(Pens.Navy, p1.X - radius, p1.Y - radius, 2 * radius, 2 * radius);
+                    string text = (i1 + 1).ToString();
+                    g.DrawString(text, this.Font, Brushes.Navy, p1.X - radius, p1.Y + radius);
+                }
+            }
+            #endregion
+            #region deseneaza contur poligon
+            if (deseneazaPoligon)
+            {
+                int n = puncte.Count;
+                for (int i = 0; i < n; i++)
+                {
+                    int i1 = i;
+                    int i2 = i + 1 < n ? i + 1 : 0;
+                    PointF p1 = puncte[i1];
+                    PointF p2 = puncte[i2];
+                    g.DrawLine(Pens.Navy, p1, p2);
+                }
+            }
+            #endregion
+            #region deseneaza contur invelitoare convexa
+            if (deseneazaInvelitoare)
+            {
+                int n = varfuriInvelitoare.Count;
+                for (int i = 0; i < n; i++) {
+                    int i1 = i;
+                    int i2 = i + 1 < n ? i + 1 : 0;
+                    PointF v1 = varfuriInvelitoare[i1];
+                    PointF v2 = varfuriInvelitoare[i2];
+                    g.DrawLine(Pens.Red,v1,v2);
+                }
+            
+            }
+            #endregion
 
-            int n = rnd.Next(10,20);
-            List<PointF> puncte = new List<PointF>();
-            for (int i = 0; i < n; i++) {
-                puncte.Add(new PointF(rnd.Next(padding,ClientSize.Width-padding),rnd.Next(padding,ClientSize.Height-padding)));
-                g.FillEllipse(Brushes.Red, puncte[i].X - epsilon/2, puncte[i].Y-epsilon/2,epsilon,epsilon);
-            }
-            List<PointF> varfuriInvelitoare = algoritmulLuiJarvis(puncte);
-            Pen bluePen = new Pen(Color.Blue,4);
-            for (int i = 0; i < varfuriInvelitoare.Count; i++) {
-                int i1 = i % varfuriInvelitoare.Count;
-                int i2 = (i + 1) % varfuriInvelitoare.Count;
-                g.DrawLine(bluePen, varfuriInvelitoare[i1], varfuriInvelitoare[i2]);
-            }
+        }
+
+        private void Form1_Click(object sender, EventArgs e)
+        {
+            PointF p = this.PointToClient(Form1.MousePosition);
+            puncte.Add(p);
+            deseneazaPoligon = false;
+            varfuriInvelitoare = new List<PointF>();
+            deseneazaInvelitoare = false;
+            Invalidate();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            deseneazaPoligon = true;
+            Invalidate();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            deseneazaInvelitoare = true;
+            varfuriInvelitoare = algoritmulLuiJarvis(puncte);
+            Invalidate();
         }
     }
 }
